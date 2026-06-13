@@ -1,0 +1,3247 @@
+---
+title: "Informe Institucional Saber 11"
+author: "Elmer Rodríguez - Gabriela Diaz"
+date: "`r Sys.Date()`"
+
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+    number_sections: true
+    code_folding: hide
+    css: estilos.css
+---
+
+```{r setup, include=FALSE}
+# Esto ayuda a ocultar completamente el código:
+knitr::opts_chunk$set(
+  echo = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+```
+
+```{r}
+# ============================
+# LIBRERÍAS
+# ============================
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(plotly)
+library(tibble)
+library(tidyverse)
+library(car)
+library(psych)
+# ============================
+```
+
+
+```{r}
+# Datos Originales
+df12 <- read.csv(
+  "df26-df_12th.csv",
+  sep = ",", header = TRUE, encoding = "UTF-8"
+)
+```
+
+# Introducción
+
+La evaluación de los procesos académicos constituye una herramienta fundamental para la mejora continua de la calidad educativa y para la toma de decisiones orientadas al fortalecimiento del desempeño estudiantil.
+
+En este contexto, la presente investigación tiene como propósito analizar la relación existente entre diversas fuentes de información académica institucional y los resultados obtenidos por los estudiantes en la prueba Saber 11, con el fin de identificar patrones de comportamiento, factores asociados al desempeño y oportunidades de intervención pedagógica.
+
+La institución dispone actualmente de múltiples mecanismos de seguimiento al proceso formativo de los estudiantes, entre los que se encuentran los simulacros de preparación para la prueba Saber, las calificaciones académicas obtenidas durante el año escolar, la participación en programas de fortalecimiento como el Pre-ICFES, así como estrategias diferenciadas de formación tales como el programa Cambridge y el programa NOVA.
+
+# Objetivos del Análisis
+
+## Objetivo General
+
+Analizar la relación entre los indicadores académicos institucionales y los resultados obtenidos en la prueba Saber 11, con el propósito de identificar factores asociados al desempeño estudiantil y generar información útil para la toma de decisiones académicas.
+
+## Objetivos Específicos
+
+1. Evaluar la correlación entre simulacros, desempeño académico institucional y resultados de la prueba Saber.
+
+2. Analizar el comportamiento de los estudiantes según su énfasis académico.
+
+3. Comparar el desempeño de la población con diagnóstico frente a la población general.
+
+4. Comparar los resultados de estudiantes Cambridge y No Cambridge.
+
+5. Analizar el comportamiento académico de los estudiantes pertenecientes al programa NOVA.
+
+6. Estudiar la relación entre la asistencia a los espacios Pre-ICFES y los resultados obtenidos en la prueba Saber.
+
+# Estructura del Informe
+
+El presente informe se encuentra organizado en seis componentes principales:
+
+**1. Resumen descriptivo de la base de datos** 
+
+Caracterización inicial de la población mediante medidas resumen para comprender el comportamiento general de los resultados académicos.
+
+**2. Correlación entre fuentes de información**
+
+Se analizará la relación entre simulacros, desempeño académico institucional y resultados de la prueba Saber, identificando patrones de asociación positiva, negativa y posibles discrepancias entre las diferentes fuentes de evaluación.
+
+**3. Análisis por énfasis académico**
+
+Se evaluará el comportamiento de los estudiantes pertenecientes a cada énfasis institucional con el fin de identificar fortalezas y oportunidades de mejora por área del conocimiento.
+
+**4. Población con diagnóstico**
+
+Se estudiarán las características y resultados obtenidos por los estudiantes con diagnóstico, comparándolos con la población general para identificar posibles necesidades de acompañamiento académico.
+
+**5. Programa Cambridge**
+
+Se analizarán las diferencias observadas entre estudiantes Cambridge y No Cambridge en términos de desempeño académico y resultados en la prueba Saber.
+
+**6. Programa NOVA**
+
+Se examinará el comportamiento de los estudiantes pertenecientes al programa NOVA y su relación con los diferentes indicadores académicos institucionales.
+
+**7. Asistencia a Pre-ICFES**
+
+Se estudiará la relación entre los niveles de asistencia a las actividades de preparación y los resultados obtenidos en la prueba Saber, con el fin de evaluar el impacto potencial de estos espacios de fortalecimiento
+
+
+## Resumen descriptivo general
+
+### Perfil general de la población
+
+Antes del análisis académico se presenta una caracterización general de la cohorte con el fin de contextualizar los resultados institucionales.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(kableExtra)
+library(ggplot2)
+
+#=========================
+# TABLA RESUMEN
+#=========================
+
+crear_resumen <- function(data,var,nombre){
+
+data %>%
+
+count(
+!!sym(var)
+)%>%
+
+rename(
+Categoria=1
+)%>%
+
+mutate(
+
+Variable=nombre,
+
+Categoria=
+as.character(
+Categoria
+)
+
+)
+
+}
+
+resumen <- bind_rows(
+
+crear_resumen(
+df12,
+"Enfasis",
+"Énfasis"
+),
+
+crear_resumen(
+df12,
+"Diagnostico",
+"Diagnóstico"
+),
+
+crear_resumen(
+df12,
+"Nova",
+"NOVA"
+)
+
+)
+
+resumen <- resumen %>%
+
+group_by(
+Variable
+)%>%
+
+mutate(
+
+Porcentaje=
+
+paste0(
+
+round(
+
+100*n/sum(n)
+
+),
+
+"%"
+
+)
+
+)%>%
+
+ungroup()
+
+resumen %>%
+
+select(
+Variable,
+Categoria,
+n,
+Porcentaje
+)%>%
+
+kbl(
+
+caption=
+"Caracterización general de la población",
+
+col.names=
+
+c(
+"Variable",
+"Categoría",
+"Estudiantes",
+"%"
+),
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover",
+"condensed"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)
+```
+
+**Interpretación**
+
+La tabla presenta una caracterización inicial de la cohorte considerando tres variables institucionales relevantes.
+
+En **Énfasis** se observa cómo se distribuyen los estudiantes entre las diferentes rutas académicas ofrecidas por la institución, permitiendo dimensionar posteriormente si existen diferencias de desempeño asociadas al perfil formativo.
+
+En **Diagnóstico** se identifica la proporción de estudiantes con y sin acompañamiento diferencial, información que posteriormente permitirá contextualizar resultados académicos y analizar posibles necesidades de apoyo institucional.
+
+Respecto al programa **NOVA**, la distribución observada permite reconocer el nivel de participación dentro de esta estrategia institucional y servirá como punto de comparación en análisis posteriores de desempeño.
+
+---
+
+**Distribución de asistencia**
+
+```{r fig.height=4}
+df12 %>%
+
+count(
+Asistencia
+)%>%
+
+ggplot(
+
+aes(
+
+x=
+factor(
+Asistencia
+),
+
+y=n
+
+)
+
+)+
+
+geom_col(
+
+fill=
+"#0B1F3A",
+
+alpha=.9
+
+)+
+
+geom_text(
+
+aes(
+label=n
+),
+
+vjust=-0.3,
+
+size=4
+
+)+
+
+theme_minimal()+
+
+labs(
+
+title=
+"Asistencia a Pre-ICFES",
+
+x=
+"Asistencias",
+
+y=
+"Estudiantes"
+
+)
+```
+
+**Interpretación**
+
+El gráfico muestra la distribución de estudiantes según el número de asistencias registradas en las actividades de preparación académica (Pre-ICFES).
+
+Una mayor concentración en niveles altos de asistencia puede interpretarse como una participación institucional más constante en los procesos de fortalecimiento; mientras que una distribución más dispersa evidencia diferencias en el nivel de exposición de los estudiantes a estas estrategias de preparación.
+
+---
+
+**Distribución Programa Cambridge**
+
+```{r fig.height=5}
+cambridge <-
+
+df12 %>%
+
+count(
+Cambridge
+)
+
+ggplot(
+
+cambridge,
+
+aes(
+
+x="",
+
+y=n,
+
+fill=
+Cambridge
+
+)
+
+)+
+
+geom_col(
+
+width=1
+
+)+
+
+coord_polar(
+"y"
+)+
+
+geom_text(
+
+aes(
+
+label=
+
+paste0(
+
+round(
+
+100*n/sum(n)
+
+),
+
+"%"
+
+)
+
+),
+
+position=
+
+position_stack(
+0.5
+),
+
+color=
+"white",
+
+size=5
+
+)+
+
+theme_void()+
+
+labs(
+
+title=
+"Participación Programa Cambridge"
+
+)
+```
+
+**Interpretación**
+
+El diagrama circular resume la composición de la población según su trayectoria dentro del programa Cambridge.
+
+La categoría **0** corresponde a estudiantes que no presentaron exámenes Cambridge; **1** representa quienes presentaron únicamente **IGCSE**; **2** agrupa estudiantes que presentaron únicamente **AS**; y **3** corresponde a quienes realizaron ambos procesos (**IGCSE y AS**).
+
+Esta distribución permite identificar el alcance del programa dentro de la cohorte y posteriormente analizar si mayores niveles de participación en certificaciones internacionales presentan comportamientos diferenciales en el desempeño académico y en los resultados de la prueba Saber.
+
+---
+
+Finalmente, se presenta una caracterización general del desempeño académico del grupo evaluado.
+
+En esta parte se resume los resultados promedio y la variabilidad observada en simulacros, prueba Saber y desempeño académico institucional. La desviación estándar permite identificar si los resultados son relativamente homogéneos o si existen diferencias importantes entre estudiantes.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+
+variables <- c(
+
+# Simulacros
+"GlobalS1",
+"GlobalS2",
+"GlobalS3",
+
+# Saber
+"Global_PS",
+
+# Áreas Saber
+"Lect_PS",
+"Mat_PS",
+"Soc_PS",
+"Nat_PS",
+"Ing_PS",
+
+# Académico
+"Esp_CA",
+"Mat_CA",
+"Soc_CA",
+"Bio_CA",
+"Fis_CA",
+"Quim_CA",
+"Ing_CA"
+
+)
+
+tabla_resumen <-
+
+data.frame(
+
+Variable =
+variables,
+
+Promedio =
+sapply(
+
+df12[
+variables
+],
+
+function(x)
+
+round(
+mean(
+x,
+na.rm=TRUE
+),
+0
+)
+
+),
+
+DE =
+sapply(
+
+df12[
+variables
+],
+
+function(x)
+
+round(
+
+sd(
+x,
+na.rm=TRUE
+),
+
+0
+
+)
+
+),
+
+Min =
+sapply(
+
+df12[
+variables
+],
+
+function(x)
+
+round(
+
+min(
+x,
+na.rm=TRUE
+),
+
+0
+
+)
+
+),
+
+Max =
+sapply(
+
+df12[
+variables
+],
+
+function(x)
+
+round(
+
+max(
+x,
+na.rm=TRUE
+),
+
+0
+
+)
+
+)
+
+)
+
+tabla_resumen %>%
+
+mutate(
+
+Grupo = case_when(
+
+Variable %in%
+
+c(
+"GlobalS1",
+"GlobalS2",
+"GlobalS3"
+)
+
+~
+"Simulacros",
+
+Variable %in%
+
+c(
+"Global_PS",
+"Lect_PS",
+"Mat_PS",
+"Soc_PS",
+"Nat_PS",
+"Ing_PS"
+)
+
+~
+"Prueba Saber",
+
+TRUE ~
+
+"Notas Institucionales"
+
+)
+
+) %>%
+
+select(
+
+Grupo,
+
+everything()
+
+) %>%
+
+kbl(
+
+caption =
+"Resumen descriptivo institucional",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover",
+"condensed"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)%>%
+
+group_rows(
+
+"Simulacros",
+
+1,
+
+3
+
+)%>%
+
+group_rows(
+
+"Prueba Saber",
+
+4,
+
+9
+
+)%>%
+
+group_rows(
+
+"Notas Institucionales",
+
+10,
+
+16
+
+)%>%
+
+column_spec(
+1,
+bold=TRUE
+)
+```
+
+**Interpretación**
+
+Los promedios permiten identificar el nivel general de desempeño institucional en cada dimensión evaluada, mientras que la desviación estándar muestra qué tan similares o diferentes son los resultados entre estudiantes.
+
+Valores con desviaciones estándar más bajas indican comportamientos más homogéneos, mientras que valores más altos sugieren una mayor dispersión y presencia de diferencias dentro del grupo.
+
+Esta caracterización inicial sirve como punto de referencia para interpretar posteriormente las correlaciones, diferencias por énfasis y relaciones con el resultado obtenido en la prueba Saber.
+
+---
+
+### Resumen descriptivo de estudiantes sin diagnóstico
+
+Con el fin de complementar el análisis institucional, se presenta una caracterización descriptiva considerando únicamente la población que **no presenta diagnóstico registrado**.
+
+Esta tabla resume el comportamiento promedio y la variabilidad observada en simulacros, resultados Saber y desempeño académico institucional dentro de este grupo específico.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(kableExtra)
+
+#====================================
+# Filtrar estudiantes sin diagnóstico
+#====================================
+
+df_sin_diag <- df12 %>%
+filter(
+Diagnostico == "No"
+)
+
+#====================================
+# Variables
+#====================================
+
+variables <- c(
+
+"GlobalS1",
+"GlobalS2",
+"GlobalS3",
+
+"Global_PS",
+
+"Lect_PS",
+"Mat_PS",
+"Soc_PS",
+"Nat_PS",
+"Ing_PS",
+
+"Esp_CA",
+"Mat_CA",
+"Soc_CA",
+"Bio_CA",
+"Fis_CA",
+"Quim_CA",
+"Ing_CA"
+
+)
+
+#====================================
+# Tabla descriptiva
+#====================================
+
+tabla_resumen <- data.frame(
+
+Variable = variables,
+
+Promedio = sapply(
+
+df_sin_diag[variables],
+
+function(x)
+
+round(
+mean(
+x,
+na.rm=TRUE
+),
+0)
+
+),
+
+DE = sapply(
+
+df_sin_diag[variables],
+
+function(x)
+
+round(
+sd(
+x,
+na.rm=TRUE
+),
+0)
+
+),
+
+Min = sapply(
+
+df_sin_diag[variables],
+
+function(x)
+
+round(
+min(
+x,
+na.rm=TRUE
+),
+0)
+
+),
+
+Max = sapply(
+
+df_sin_diag[variables],
+
+function(x)
+
+round(
+max(
+x,
+na.rm=TRUE
+),
+0)
+
+)
+
+)
+
+tabla_resumen <- tabla_resumen %>%
+
+mutate(
+
+Grupo = case_when(
+
+Variable %in%
+
+c(
+"GlobalS1",
+"GlobalS2",
+"GlobalS3"
+)
+
+~
+"Simulacros",
+
+Variable %in%
+
+c(
+
+"Global_PS",
+
+"Lect_PS",
+"Mat_PS",
+"Soc_PS",
+"Nat_PS",
+"Ing_PS"
+
+)
+
+~
+"Prueba Saber",
+
+TRUE ~
+
+"Notas Institucionales"
+
+)
+
+)
+
+tabla_resumen %>%
+
+select(
+
+Grupo,
+
+everything()
+
+)%>%
+
+kbl(
+
+caption =
+
+paste0(
+
+"Resumen descriptivo — Estudiantes sin diagnóstico (n = ",
+
+nrow(
+df_sin_diag
+),
+
+")"
+
+),
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover",
+"condensed"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background="#0B1F3A",
+
+color="white",
+
+bold=TRUE
+
+)%>%
+
+group_rows(
+
+"Simulacros",
+
+1,
+
+3
+
+)%>%
+
+group_rows(
+
+"Prueba Saber",
+
+4,
+
+9
+
+)%>%
+
+group_rows(
+
+"Notas Institucionales",
+
+10,
+
+16
+
+)%>%
+
+column_spec(
+1,
+bold=TRUE
+)
+```
+
+**Interpretación**
+
+Esta tabla describe exclusivamente el comportamiento del grupo de estudiantes sin diagnóstico registrado y permite utilizarlo como punto de comparación frente al análisis general institucional.
+
+Los promedios permiten identificar el nivel típico de desempeño del grupo, mientras que la desviación estándar muestra el nivel de homogeneidad entre estudiantes. Valores más bajos indican resultados más consistentes; valores más altos reflejan mayor diversidad en el desempeño.
+
+Este resumen servirá como línea base para comparar posteriormente si existen diferencias relevantes entre poblaciones con y sin diagnóstico en relación con simulacros, desempeño académico y resultados de la prueba Saber.
+
+---
+---
+
+## Correlación entre fuentes de información
+
+
+Con el propósito de analizar la consistencia entre las diferentes fuentes de evaluación utilizadas por la institución, se estudió la relación entre tres indicadores fundamentales: el desempeño en los simulacros institucionales, el desempeño académico registrado en las calificaciones institucionales y los resultados obtenidos en la prueba Saber 11.
+
+Dado que estas variables se encuentran originalmente en escalas diferentes (simulacros y prueba Saber sobre una escala cercana a 500 puntos y calificaciones académicas sobre una escala de 0 a 100), se realizó previamente una estandarización mediante puntajes Z. Esta transformación permite que todas las variables tengan una misma escala de comparación (media = 0 y desviación estándar = 1), facilitando la interpretación de las correlaciones y de los modelos predictivos.
+
+```{r include=FALSE}
+library(dplyr)
+
+df12 <- df12 %>%
+  mutate(
+    Prom_Simulacros = rowMeans(
+      select(., GlobalS1, GlobalS2, GlobalS3),
+      na.rm = TRUE
+    ),
+
+    Prom_CA = rowMeans(
+      select(., Esp_CA, Mat_CA, Soc_CA,
+             Bio_CA, Fis_CA, Quim_CA, Ing_CA),
+      na.rm = TRUE
+    )
+  )
+
+df12 <- df12 %>%
+  mutate(
+    z_Simulacros = as.numeric(scale(Prom_Simulacros)),
+    z_CA = as.numeric(scale(Prom_CA)),
+    z_Saber = as.numeric(scale(Global_PS))
+  )
+```
+
+
+```{r include=FALSE}
+library(psych)
+
+psych::describe(
+  df12 %>%
+    select(
+      z_Simulacros,
+      z_CA,
+      z_Saber
+    )
+)
+```
+
+Una vez estandarizadas las variables, se calculó la matriz de correlaciones de Pearson para identificar la intensidad y dirección de las asociaciones existentes entre las tres fuentes de información y para facilitar la interpretación visual de estas relaciones se construyó un mapa de calor.
+
+```{r include=FALSE}
+vars <- df12 %>%
+  select(
+    z_Simulacros,
+    z_CA,
+    z_Saber
+  )
+
+matriz_cor <- cor(
+  vars,
+  use = "pairwise.complete.obs",
+  method = "pearson"
+)
+
+round(matriz_cor,3)
+```
+
+
+```{r}
+library(corrplot)
+
+corrplot(
+  matriz_cor,
+  method = "color",
+  addCoef.col = "black",
+  tl.col = "black",
+  tl.srt = 0,
+  number.cex = 1
+)
+```
+
+**Interpretación**
+
+Los coeficientes de correlación permiten identificar qué tan similares son los patrones de comportamiento entre las distintas fuentes de evaluación. Valores cercanos a 1 indican asociaciones positivas fuertes, mientras que valores cercanos a 0 sugieren relaciones débiles o inexistentes.
+
+Especial atención debe prestarse a la relación entre el promedio de simulacros y el puntaje global Saber, pues constituye el principal indicador de la capacidad predictiva de los procesos de preparación implementados por la institución.
+
+Con el fin de visualizar dichas asociaciones de manera individual, se construyeron diagramas de dispersión acompañados por una línea de tendencia lineal.
+
+```{r}
+library(ggplot2)
+
+ggplot(
+  df12,
+  aes(
+    x = z_Simulacros,
+    y = z_Saber
+  )
+) +
+  geom_point(alpha = .7, size = 3) +
+  geom_smooth(
+    method = "lm",
+    color = "red",
+    se = TRUE
+  ) +
+  labs(
+    x = "Simulacros (Estandarizado)",
+    y = "Prueba Saber (Estandarizado)"
+  ) +
+  theme_minimal()
+```
+
+La relación entre las calificaciones institucionales y el resultado Saber se evaluó mediante un procedimiento equivalente.
+
+```{r}
+ggplot(
+  df12,
+  aes(
+    x = z_CA,
+    y = z_Saber
+  )
+) +
+  geom_point(alpha = .7, size = 3) +
+  geom_smooth(
+    method = "lm",
+    color = "blue",
+    se = TRUE
+  ) +
+  labs(
+    x = "Promedio Académico (Estandarizado)",
+    y = "Prueba Saber (Estandarizado)"
+  ) +
+  theme_minimal()
+```
+
+
+Posteriormente se estimó un modelo de regresión múltiple con el objetivo de determinar cuáles de las fuentes de información presentan mayor capacidad para explicar las diferencias observadas en los resultados de la prueba Saber.
+
+<details>
+<summary><strong>Ver resultado técnico del modelo estadístico</strong></summary>
+```{r}
+modelo <- lm(
+  z_Saber ~ z_Simulacros + z_CA,
+  data = df12
+)
+
+summary(modelo)
+```
+</details>
+
+**Interpretación**
+
+Al trabajar con variables estandarizadas, los coeficientes obtenidos pueden compararse directamente entre sí. Un coeficiente más alto indica una mayor influencia relativa sobre el resultado de la prueba Saber.
+
+Los resultados muestran que el promedio de simulacros posee una capacidad explicativa considerablemente superior a la observada para las calificaciones académicas institucionales. Esto sugiere que los simulacros reproducen de manera más adecuada las competencias evaluadas posteriormente por el ICFES.
+
+Con el fin de identificar cuál de los tres simulacros aporta la mayor información predictiva, se estimó un segundo modelo utilizando los resultados individuales de cada aplicación.
+
+
+<details>
+<summary><strong>Ver resultado técnico del modelo estadístico</strong></summary>
+```{r}
+modelo_s <- lm(
+  z_Saber ~ scale(GlobalS1) +
+            scale(GlobalS2) +
+            scale(GlobalS3),
+  data = df12
+)
+
+summary(modelo_s)
+```
+</details>
+
+De manera complementaria se calcularon las correlaciones individuales entre cada simulacro y el resultado final de la prueba Saber.
+
+
+```{r}
+data.frame(
+  Simulacro = c("GlobalS1",
+                "GlobalS2",
+                "GlobalS3"),
+  Correlacion = c(
+    cor(df12$GlobalS1,
+        df12$Global_PS,
+        use = "complete.obs"),
+    
+    cor(df12$GlobalS2,
+        df12$Global_PS,
+        use = "complete.obs"),
+    
+    cor(df12$GlobalS3,
+        df12$Global_PS,
+        use = "complete.obs")
+  )
+)
+```
+
+Los resultados evidencian que el segundo simulacro presenta la asociación más fuerte con el desempeño observado en la prueba Saber, convirtiéndose en el mejor predictor individual del resultado final.
+
+Finalmente, se estimó un modelo simplificado utilizando únicamente el predictor más fuerte identificado y el promedio académico institucional.
+
+<details>
+<summary><strong>Ver resultado técnico del modelo estadístico</strong></summary>
+```{r}
+modelo_final <- lm(
+  z_Saber ~ scale(GlobalS2) + z_CA,
+  data = df12
+)
+
+summary(modelo_final)
+```
+</details>
+
+### Correlación entre simulacros y Prueba Saber por asignatura
+
+Se evalúa qué tan relacionados están los resultados de los simulacros específicos de cada asignatura con el desempeño final obtenido en la prueba Saber.
+
+```{r message=FALSE, warning=FALSE}
+
+library(dplyr)
+library(kableExtra)
+library(plotly)
+
+#==================================
+# Convertir a numérico
+#==================================
+
+vars <- c(
+
+"LectS1","LectS2","LectS3",
+"MatS1","MatS2","MatS3",
+"SocS1","SocS2","SocS3",
+"NatS1","NatS2","NatS3",
+"IngS1","IngS2","IngS3",
+
+"Lect_PS",
+"Mat_PS",
+"Soc_PS",
+"Nat_PS",
+"Ing_PS"
+
+)
+
+df12 <- df12 %>%
+
+mutate(
+
+across(
+
+all_of(vars),
+
+~as.numeric(as.character(.))
+
+)
+
+)
+
+#==================================
+# Promedios simulacros
+#==================================
+
+df12 <- df12 %>%
+
+mutate(
+
+Lect_S = rowMeans(select(.,LectS1,LectS2,LectS3),na.rm=TRUE),
+
+Mat_S = rowMeans(select(.,MatS1,MatS2,MatS3),na.rm=TRUE),
+
+Soc_S = rowMeans(select(.,SocS1,SocS2,SocS3),na.rm=TRUE),
+
+Nat_S = rowMeans(select(.,NatS1,NatS2,NatS3),na.rm=TRUE),
+
+Ing_S = rowMeans(select(.,IngS1,IngS2,IngS3),na.rm=TRUE)
+
+)
+
+#==================================
+# Correlaciones
+#==================================
+
+corr <- tibble(
+
+Asignatura=
+
+c(
+
+"Lectura",
+"Matemáticas",
+"Sociales",
+"Naturales",
+"Inglés"
+
+),
+
+Correlacion=
+
+c(
+
+cor(df12$Lect_S,df12$Lect_PS,use="complete.obs"),
+
+cor(df12$Mat_S,df12$Mat_PS,use="complete.obs"),
+
+cor(df12$Soc_S,df12$Soc_PS,use="complete.obs"),
+
+cor(df12$Nat_S,df12$Nat_PS,use="complete.obs"),
+
+cor(df12$Ing_S,df12$Ing_PS,use="complete.obs")
+
+)
+
+)
+
+corr <- corr %>%
+
+mutate(
+
+Correlacion=
+
+round(
+
+Correlacion,
+
+2
+
+),
+
+Nivel=
+
+case_when(
+
+Correlacion>=0.80 ~ "Muy alta",
+
+Correlacion>=0.60 ~ "Alta",
+
+Correlacion>=0.40 ~ "Moderada",
+
+TRUE ~ "Baja"
+
+)
+
+)
+
+#==================================
+# Tabla
+#==================================
+
+corr %>%
+
+kbl(
+
+caption=
+
+"Correlación entre simulacros y Prueba Saber",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover"
+
+),
+
+full_width=FALSE
+
+)%>%
+
+row_spec(
+
+0,
+
+background="#0B1F3A",
+
+color="white",
+
+bold=TRUE
+
+)
+
+```
+
+**Interpretación**
+
+La asignatura con mayor capacidad de anticipar el resultado final fue **`r corr$Asignatura[which.max(corr$Correlacion)]`**, con una correlación de **`r max(corr$Correlacion)`**.
+
+La asignatura con menor relación entre simulacro y resultado Saber fue **`r corr$Asignatura[which.min(corr$Correlacion)]`**, con una correlación de **`r min(corr$Correlacion)`**.
+
+Esto permite identificar en qué áreas los simulacros están reproduciendo mejor el desempeño observado posteriormente en la evaluación externa.
+
+---
+
+```{r}
+
+plot_ly(
+
+corr,
+
+x=
+~Asignatura,
+
+y=
+~Correlacion,
+
+type=
+"bar",
+
+text=
+~Correlacion,
+
+textposition=
+"outside"
+
+)%>%
+
+layout(
+
+title=
+
+"Correlación entre simulacros y Prueba Saber",
+
+yaxis=
+
+list(
+
+title=
+"Correlación",
+
+range=
+c(0,1)
+
+)
+
+)
+
+```
+
+**Interpretación**
+
+Las barras más altas representan asignaturas donde el simulacro tuvo mayor coherencia con el resultado final de la prueba Saber.
+
+Las diferencias observadas permiten identificar áreas donde la preparación institucional está reflejando mejor el desempeño externo.
+
+
+**Conclusión**
+
+Los resultados muestran una asociación positiva entre las tres fuentes de información analizadas. Sin embargo, la intensidad de dicha relación no es uniforme. Los simulacros institucionales presentan la mayor capacidad para anticipar el desempeño observado en la prueba Saber 11, mientras que las calificaciones académicas aportan información complementaria, pero con una capacidad predictiva considerablemente menor.
+
+Entre los tres simulacros aplicados, el segundo simulacro emerge como el mejor predictor individual del resultado final, lo que sugiere que su estructura y nivel de exigencia presentan una mayor alineación con las competencias evaluadas por el ICFES.
+
+En conjunto, la evidencia obtenida respalda el uso de los simulacros como herramienta principal de seguimiento académico y como mecanismo de identificación temprana de estudiantes que podrían requerir estrategias de acompañamiento antes de la presentación de la prueba Saber.
+
+
+## Análisis por énfasis académico
+
+Con el propósito de identificar fortalezas y oportunidades de mejora entre los diferentes énfasis institucionales, se evaluó el comportamiento académico considerando simultáneamente tres fuentes de información: el desempeño en simulacros institucionales, el desempeño académico institucional y el resultado obtenido en la prueba Saber.
+
+Debido a que estas variables utilizan escalas diferentes, previamente se realizó una estandarización mediante puntajes Z. Esta transformación permite comparar todas las mediciones bajo una misma referencia y evita que una escala tenga mayor peso que otra durante el análisis.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(corrplot)
+library(kableExtra)
+library(scales)
+
+#==================================================
+# Construcción de indicadores
+#==================================================
+
+df12 <- df12 %>%
+
+mutate(
+
+Prom_S =
+rowMeans(
+select(
+.,
+GlobalS1,
+GlobalS2,
+GlobalS3
+),
+na.rm=TRUE
+),
+
+Prom_CA =
+rowMeans(
+
+select(
+.,
+Esp_CA,
+Mat_CA,
+Soc_CA,
+Bio_CA,
+Fis_CA,
+Quim_CA,
+Ing_CA
+),
+
+na.rm=TRUE
+
+)
+
+)
+
+#==================================================
+# Estandarización
+#==================================================
+
+df12 <- df12 %>%
+
+mutate(
+
+z_Simulacros =
+as.numeric(
+scale(Prom_S)
+),
+
+z_CA =
+as.numeric(
+scale(Prom_CA)
+),
+
+z_Saber =
+as.numeric(
+scale(Global_PS)
+)
+
+)
+```
+
+Inicialmente se realizó una caracterización descriptiva de la población agrupada por énfasis.
+
+```{r}
+descriptivo <- df12 %>%
+
+group_by(Enfasis) %>%
+
+summarise(
+
+Estudiantes=n(),
+
+Promedio_Simulacros=
+round(
+mean(
+Prom_S,
+na.rm=TRUE
+),
+1
+),
+
+DS_Simulacros=
+round(
+sd(
+Prom_S,
+na.rm=TRUE
+),
+1
+),
+
+Promedio_CA=
+round(
+mean(
+Prom_CA,
+na.rm=TRUE
+),
+1
+),
+
+DS_CA=
+round(
+sd(
+Prom_CA,
+na.rm=TRUE
+),
+1
+),
+
+Promedio_Saber=
+round(
+mean(
+Global_PS,
+na.rm=TRUE
+),
+1
+),
+
+DS_Saber=
+round(
+sd(
+Global_PS,
+na.rm=TRUE
+),
+1
+)
+
+)
+
+descriptivo %>%
+
+kbl(
+
+caption=
+"Caracterización descriptiva por énfasis",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+c(
+"striped",
+"hover",
+"condensed"
+),
+
+full_width=FALSE,
+
+position="center"
+
+)%>%
+
+add_header_above(
+
+c(
+
+" "=2,
+
+"Simulacros"=2,
+
+"Académico"=2,
+
+"Saber"=2
+
+)
+
+)%>%
+
+row_spec(
+
+0,
+
+bold=TRUE,
+
+background=
+"#0B1F3A",
+
+color=
+"white"
+
+)%>%
+
+column_spec(
+1,
+bold=TRUE
+)
+```
+
+La tabla anterior permite observar el tamaño de cada énfasis y conocer su comportamiento promedio.
+
+Promedios altos indican mejores resultados generales, mientras que desviaciones estándar elevadas indican mayor variabilidad dentro del grupo.
+
+Posteriormente se comparó el desempeño relativo mediante variables estandarizadas.
+
+```{r}
+resumen <- df12 %>%
+
+group_by(
+Enfasis
+)%>%
+
+summarise(
+
+Simulacros=
+mean(
+z_Simulacros,
+na.rm=TRUE
+),
+
+Academico=
+mean(
+z_CA,
+na.rm=TRUE
+),
+
+Saber=
+mean(
+z_Saber,
+na.rm=TRUE
+)
+
+)%>%
+
+arrange(
+desc(
+Saber
+)
+)%>%
+
+mutate(
+
+Resultado=
+
+case_when(
+
+row_number()==1 ~
+"★ Mayor desempeño",
+
+row_number()==n() ~
+"Atención",
+
+TRUE~
+"Intermedio"
+
+)
+
+)
+
+mejor <- resumen$Enfasis[1]
+
+menor <- resumen$Enfasis[nrow(resumen)]
+
+resumen %>%
+
+mutate(
+
+Simulacros=
+round(
+Simulacros,
+2
+),
+
+Academico=
+round(
+Academico,
+2
+),
+
+Saber=
+round(
+Saber,
+2
+)
+
+)%>%
+
+kbl(
+
+caption=
+"Comparación estandarizada entre énfasis",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+c(
+"striped",
+"hover"
+),
+
+full_width=FALSE,
+
+position="center"
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)%>%
+
+column_spec(
+1,
+bold=TRUE
+)%>%
+
+column_spec(
+5,
+bold=TRUE
+)
+```
+
+Al comparar simultáneamente las tres fuentes de información se identificó que el énfasis con mejor comportamiento global fue:
+
+**`r mejor`**
+
+Por el contrario, el énfasis que presentó menor desempeño relativo frente al promedio institucional fue:
+
+**`r menor`**
+
+Esto no significa necesariamente un bajo rendimiento absoluto, sino una oportunidad para fortalecer estrategias académicas y de preparación.
+
+```{r fig.height=6}
+grafico <- resumen %>%
+
+pivot_longer(
+
+cols=
+c(
+Simulacros,
+Academico,
+Saber
+),
+
+names_to=
+"Fuente",
+
+values_to=
+"Valor"
+
+)
+
+ggplot(
+
+grafico,
+
+aes(
+
+Enfasis,
+Valor,
+fill=Fuente
+
+)
+
+)+
+
+geom_col(
+
+position=
+"dodge"
+
+)+
+
+coord_flip()+
+
+theme_minimal()+
+
+labs(
+
+title=
+"Comparación del desempeño por énfasis",
+
+x="",
+
+y=
+"Puntaje estandarizado"
+
+)+
+
+scale_fill_manual(
+
+values=
+
+c(
+"#0B1F3A",
+"#3E7CB1",
+"#7EA8BE"
+)
+
+)
+```
+
+El gráfico compara simultáneamente el desempeño promedio de cada énfasis en tres dimensiones: simulacros institucionales, desempeño académico interno y resultado obtenido en la prueba Saber. Como todas las variables fueron estandarizadas, valores por encima de cero representan desempeños superiores al promedio institucional y valores por debajo indican desempeños relativamente menores.
+
+Cuando las barras de un mismo énfasis presentan alturas similares, se interpreta que existe coherencia entre el proceso formativo institucional y el resultado externo; es decir, el desempeño observado durante el año logra mantenerse en la prueba Saber. Por el contrario, diferencias amplias entre simulacros, desempeño académico y Saber pueden indicar oportunidades de ajuste en estrategias pedagógicas, preparación para el examen o criterios de evaluación interna.
+
+En este análisis, el énfasis **`r mejor`** presentó el comportamiento más consistente y favorable entre las tres fuentes evaluadas, evidenciando una mayor alineación entre desempeño institucional y resultado externo. Por otra parte, el énfasis **`r menor`** fue el que menos se destacó frente al promedio institucional, lo que representa una oportunidad para fortalecer procesos de acompañamiento académico y seguimiento pedagógico.
+
+```{r fig.height=8, fig.width=10}
+library(corrplot)
+
+par(
+mfrow = c(2,2),
+mar = c(1,1,4,1)   # margen superior para el título
+)
+
+lista <- df12 %>%
+group_by(Enfasis) %>%
+group_split()
+
+for(i in lista){
+
+nombre <- unique(i$Enfasis)
+
+matriz <- cor(
+
+i %>%
+
+select(
+z_Simulacros,
+z_CA,
+z_Saber
+),
+
+use = "complete.obs"
+
+)
+
+corrplot(
+
+matriz,
+
+method = "color",
+
+addCoef.col = "black",
+
+tl.col = "black",
+
+tl.srt = 0,
+
+title = paste(
+"Énfasis:",
+nombre
+),
+
+mar = c(0,0,2,0)
+
+)
+
+}
+```
+
+Los mapas de calor muestran una relación positiva entre las tres fuentes de evaluación analizadas (simulacros, desempeño académico institucional y prueba Saber) en todos los énfasis, lo que indica que, en términos generales, los estudiantes que obtienen mejores resultados durante el proceso formativo también tienden a obtener mejores resultados en la evaluación externa.
+
+La relación más fuerte se observa entre **simulacros y prueba Saber** en todos los énfasis. Esta asociación es especialmente alta en **Arte (r = 0.93)** y **Ciencias (r = 0.89)**, seguida por **Humanidades (r = 0.84)** y **Matemáticas (r = 0.75)**. Esto sugiere que los simulacros están funcionando como un buen indicador del desempeño esperado en la prueba real y que el seguimiento realizado durante el año logra anticipar de manera adecuada el resultado externo.
+
+Por otro lado, la relación entre el **desempeño académico institucional (_CA)** y la prueba Saber es más moderada. El énfasis que presenta mayor alineación entre notas académicas y resultado externo es **Humanidades (r = 0.60)**, seguido por **Ciencias (r = 0.56)** y **Arte (r = 0.49)**. En contraste, **Matemáticas presenta la relación más baja (r = 0.35)**, lo que sugiere que las calificaciones internas de este grupo explican en menor medida el desempeño obtenido en la prueba Saber.
+
+En conjunto, estos resultados indican que los **simulacros parecen ser el mecanismo institucional que mejor representa el desempeño posterior en la prueba Saber**, mientras que las calificaciones académicas muestran una capacidad predictiva más moderada. Particularmente, el énfasis de **Ciencias y Arte evidencian una mayor coherencia entre preparación y resultado externo**, mientras que **Matemáticas presenta una mayor oportunidad de fortalecer la alineación entre evaluación institucional y competencias evaluadas externamente**.
+
+Para complementar el análisis por énfasis, se estimó un modelo de regresión múltiple con el objetivo de evaluar si el resultado en la prueba Saber continúa estando asociado al énfasis académico después de considerar el desempeño en simulacros y el desempeño académico institucional.
+
+<details>
+<summary><strong>Ver resultado técnico del modelo estadístico</strong></summary>
+```{r}
+modelo <- lm(
+
+z_Saber ~
+
+z_Simulacros +
+
+z_CA +
+
+Enfasis,
+
+data =
+df12
+
+)
+
+summary(
+modelo
+)
+```
+</details>
+
+
+Este análisis busca responder la siguiente pregunta:
+
+**¿El énfasis académico sigue marcando diferencias en los resultados Saber una vez se considera el desempeño previo del estudiante?**
+
+El modelo compara simultáneamente el efecto de los simulacros, el desempeño académico institucional y el énfasis sobre el resultado final en la prueba Saber.
+
+- El **desempeño en simulacros fue el factor con mayor capacidad explicativa del resultado Saber** (*β = 0.85; p < 0.001*), indicando que los estudiantes con mejores simulacros tienden a obtener mejores resultados en la prueba real.
+
+- El **promedio académico institucional (_CA_) no mostró una asociación estadísticamente significativa** (*p = 0.553*), lo que sugiere que, una vez considerados los simulacros, las calificaciones internas aportan poca información adicional para explicar el resultado Saber.
+
+- Después de controlar por desempeño previo, el énfasis **Ciencias** presentó diferencias significativas frente al énfasis de referencia (*p = 0.017*), mientras que **Humanidades mostró una tendencia cercana a significancia** (*p = 0.055*). El énfasis de **Matemáticas no presentó diferencias relevantes**.
+
+- En conjunto, el modelo explicó aproximadamente el **76% de la variabilidad observada en los resultados Saber (R² = 0.764)**, lo que indica una capacidad explicativa alta para fines institucionales.
+
+Los resultados sugieren que el mejor indicador del desempeño futuro en la prueba Saber no son necesariamente las calificaciones internas, sino el comportamiento sostenido en los simulacros. Esto refuerza la importancia de continuar utilizando los simulacros como herramienta de seguimiento y preparación académica, complementándolos con estrategias pedagógicas específicas según el énfasis.
+
+Este modelo evalúa si el énfasis continúa explicando diferencias en resultados incluso después de considerar simulacros y desempeño académico.
+
+Antes de interpretar diferencias entre énfasis, se presenta una visualización interactiva del resultado estandarizado en la prueba Saber.
+
+Cada punto representa un estudiante y cada caja resume el comportamiento general del grupo. La interacción permite identificar estudiantes con desempeños excepcionalmente altos o bajos (valores atípicos), así como observar qué tan homogéneo o disperso es cada énfasis.
+
+```{r message=FALSE, warning=FALSE}
+library(plotly)
+library(ggplot2)
+
+g <- ggplot(
+
+df12,
+
+aes(
+
+x = Enfasis,
+
+y = z_Saber,
+
+fill = Enfasis,
+
+text = paste(
+
+"<b>Estudiante:</b>", Nombre,
+"<br><b>Énfasis:</b>", Enfasis,
+"<br><b>Resultado Saber (Z):</b>", round(z_Saber,2)
+
+)
+
+)
+
+)+
+
+geom_boxplot(
+
+alpha=.70,
+
+outlier.shape = NA
+
+)+
+
+geom_jitter(
+
+width=.18,
+
+size=2,
+
+alpha=.8
+
+)+
+
+coord_flip()+
+
+theme_minimal()+
+
+labs(
+
+title =
+"Distribución del desempeño Saber por énfasis",
+
+x="",
+
+y=
+"Resultado Saber estandarizado"
+
+)+
+
+theme(
+
+legend.position=
+"none"
+
+)
+
+ggplotly(
+
+g,
+
+tooltip="text"
+
+)
+```
+
+
+Este gráfico permite comparar no solo el promedio de desempeño entre énfasis, sino también la **variabilidad interna de cada grupo**.
+
+Las cajas más compactas indican comportamientos más homogéneos entre estudiantes, mientras que cajas más amplias muestran mayor diferencia de resultados dentro del mismo énfasis. Los puntos alejados de la caja corresponden a **valores atípicos (outliers)** y representan estudiantes con desempeños significativamente superiores o inferiores al comportamiento esperado del grupo.
+
+Para la institución, este gráfico permite responder dos preguntas clave: **qué énfasis presenta mayor estabilidad en resultados y dónde aparecen estudiantes que requieren acompañamiento o fortalecimiento diferenciado.**
+
+**Conclusión**
+
+El análisis evidencia que existen diferencias en el comportamiento académico entre los distintos énfasis institucionales cuando se consideran conjuntamente los resultados de simulacros, el desempeño académico interno y el desempeño observado en la prueba Saber.
+
+El énfasis **`r mejor`** presentó el comportamiento más sólido y consistente entre las tres fuentes evaluadas, mostrando una mayor alineación entre el proceso formativo institucional y el resultado obtenido en la evaluación externa. Este comportamiento sugiere que las estrategias de seguimiento, acompañamiento y preparación implementadas en este énfasis están logrando traducirse de manera favorable en el desempeño final de los estudiantes.
+
+Por otro lado, el énfasis **`r menor`** fue el que menos se destacó dentro del grupo analizado. Más que interpretarse como una debilidad aislada, este resultado debe entenderse como una oportunidad para fortalecer procesos de acompañamiento académico, revisar prácticas de evaluación y consolidar estrategias pedagógicas orientadas a mejorar la transferencia del aprendizaje hacia escenarios de evaluación externa.
+
+De manera transversal, el análisis muestra que los **simulacros presentan una mayor capacidad para anticipar el resultado Saber que las calificaciones académicas institucionales**, lo cual refuerza su valor como herramienta de seguimiento y toma de decisiones.
+
+Como recomendación institucional, se sugiere mantener el monitoreo conjunto entre simulacros, desempeño académico y resultados Saber, utilizando esta información para identificar tempranamente grupos que requieran intervención y para replicar prácticas exitosas entre énfasis. Esto permite que las decisiones académicas se fundamenten cada vez más en evidencia y seguimiento sistemático del desempeño estudiantil.
+
+---
+
+## Población con diagnóstico
+
+Se estudian las características y resultados obtenidos por los estudiantes con diagnóstico comparándolos con la población general y con estudiantes sin diagnóstico, con el fin de identificar posibles necesidades de acompañamiento académico en relación con el desempeño observado en la prueba Saber.
+
+### Comparación descriptiva de resultados Prueba Saber
+
+Inicialmente se presentan los puntajes promedio obtenidos en la prueba Saber para cada grupo analizado.
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(tidyr)
+library(kableExtra)
+library(plotly)
+
+#====================================
+# Crear tabla resumen
+#====================================
+
+tabla <- bind_rows(
+
+df12 %>%
+
+summarise(
+
+Grupo =
+"Población general",
+
+Global =
+round(mean(Global_PS,na.rm=TRUE)),
+
+Lectura =
+round(mean(Lect_PS,na.rm=TRUE)),
+
+Matematicas =
+round(mean(Mat_PS,na.rm=TRUE)),
+
+Sociales =
+round(mean(Soc_PS,na.rm=TRUE)),
+
+Naturales =
+round(mean(Nat_PS,na.rm=TRUE)),
+
+Ingles =
+round(mean(Ing_PS,na.rm=TRUE))
+
+),
+
+df12 %>%
+
+filter(
+Diagnostico=="No"
+)%>%
+
+summarise(
+
+Grupo =
+"Sin diagnóstico",
+
+Global =
+round(mean(Global_PS,na.rm=TRUE)),
+
+Lectura =
+round(mean(Lect_PS,na.rm=TRUE)),
+
+Matematicas =
+round(mean(Mat_PS,na.rm=TRUE)),
+
+Sociales =
+round(mean(Soc_PS,na.rm=TRUE)),
+
+Naturales =
+round(mean(Nat_PS,na.rm=TRUE)),
+
+Ingles =
+round(mean(Ing_PS,na.rm=TRUE))
+
+),
+
+df12 %>%
+
+filter(
+Diagnostico=="Si"
+)%>%
+
+summarise(
+
+Grupo =
+"Con diagnóstico",
+
+Global =
+round(mean(Global_PS,na.rm=TRUE)),
+
+Lectura =
+round(mean(Lect_PS,na.rm=TRUE)),
+
+Matematicas =
+round(mean(Mat_PS,na.rm=TRUE)),
+
+Sociales =
+round(mean(Soc_PS,na.rm=TRUE)),
+
+Naturales =
+round(mean(Nat_PS,na.rm=TRUE)),
+
+Ingles =
+round(mean(Ing_PS,na.rm=TRUE))
+
+)
+
+)
+
+#====================================
+# Tabla
+#====================================
+
+tabla %>%
+
+kbl(
+
+caption=
+"Promedios de resultados Prueba Saber",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover",
+"condensed"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)
+```
+
+**Interpretación**
+
+La tabla permite comparar el desempeño promedio observado en estudiantes con diagnóstico frente al comportamiento general de la cohorte y frente al grupo sin diagnóstico. El objetivo es identificar diferencias globales y reconocer posibles áreas donde el acompañamiento institucional pueda generar mayor impacto.
+
+### Comparación interactiva por áreas
+
+```{r}
+graf <- tabla %>%
+
+pivot_longer(
+
+cols=
+-Grupo,
+
+names_to=
+"Área",
+
+values_to=
+"Promedio"
+
+)
+
+plot_ly(
+
+graf,
+
+x=
+~Área,
+
+y=
+~Promedio,
+
+color=
+~Grupo,
+
+type=
+"bar"
+
+)%>%
+
+layout(
+
+title=
+"Comparación de resultados promedio — Prueba Saber",
+
+barmode=
+"group",
+
+yaxis=
+
+list(
+
+title=
+"Puntaje promedio"
+
+)
+
+)
+```
+
+**Interpretación**
+
+El gráfico permite comparar de forma interactiva el comportamiento promedio de cada grupo por área evaluada. Al posicionar el cursor sobre cada barra es posible consultar los valores exactos y detectar rápidamente áreas con mayores diferencias relativas.
+
+### Distribución del puntaje global
+
+```{r}
+df_box <- df12 %>%
+
+mutate(
+
+Grupo =
+
+case_when(
+
+Diagnostico=="Si"
+
+~
+
+"Con diagnóstico",
+
+TRUE
+
+~
+
+"Sin diagnóstico"
+
+)
+
+)
+
+plot_ly(
+
+df_box,
+
+x=
+~Grupo,
+
+y=
+~Global_PS,
+
+type=
+"box",
+
+color=
+~Grupo
+
+)%>%
+
+layout(
+
+title=
+"Distribución interactiva del puntaje global"
+
+)
+```
+
+**Interpretación**
+
+El diagrama interactivo permite observar la dispersión del puntaje global dentro de cada grupo y detectar posibles valores extremos. Diferencias en el nivel central o en la amplitud de la distribución pueden orientar futuras acciones de acompañamiento académico.
+
+---
+
+## Programa Cambridge
+
+Se analizan las diferencias observadas entre estudiantes según su participación en el programa Cambridge con el fin de identificar posibles variaciones en el desempeño académico institucional y en los resultados obtenidos en la prueba Saber.
+
+### Comparación descriptiva
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(kableExtra)
+library(tidyr)
+library(plotly)
+
+#===================================
+# Crear promedio académico
+#===================================
+
+df12 <- df12 %>%
+
+mutate(
+
+Prom_CA =
+
+rowMeans(
+
+select(
+
+.,
+
+Esp_CA,
+Mat_CA,
+Soc_CA,
+Bio_CA,
+Fis_CA,
+Quim_CA,
+Ing_CA
+
+),
+
+na.rm=TRUE
+
+)
+
+)
+
+#===================================
+# Etiquetas Cambridge
+#===================================
+
+df_cam <- df12 %>%
+
+mutate(
+
+Cambridge_txt = case_when(
+
+Cambridge==0 ~ "No presentó",
+
+Cambridge==1 ~ "IGCSE",
+
+Cambridge==2 ~ "AS",
+
+Cambridge==3 ~ "IGCSE + AS"
+
+)
+
+)
+
+#===================================
+# Tabla promedios
+#===================================
+
+tabla_cam <-
+
+df_cam %>%
+
+group_by(
+Cambridge_txt
+)%>%
+
+summarise(
+
+Estudiantes=n(),
+
+Promedio_CA=
+
+round(
+
+mean(
+
+Prom_CA,
+
+na.rm=TRUE
+
+)
+
+),
+
+Saber_Global=
+
+round(
+
+mean(
+
+Global_PS,
+
+na.rm=TRUE
+
+)
+
+)
+
+)
+
+tabla_cam %>%
+
+kbl(
+
+caption=
+"Promedios por participación Cambridge",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background="#0B1F3A",
+
+color="white",
+
+bold=TRUE
+
+)
+```
+
+**Interpretación**
+
+El grupo con mayor promedio institucional fue **`r tabla_cam$Cambridge_txt[which.max(tabla_cam$Promedio_CA)]`** con **`r max(tabla_cam$Promedio_CA)`** puntos.
+
+En la prueba Saber, el mejor resultado promedio correspondió al grupo **`r tabla_cam$Cambridge_txt[which.max(tabla_cam$Saber_Global)]`**, alcanzando **`r max(tabla_cam$Saber_Global)`** puntos.
+
+Esto permite observar si el desempeño institucional mantiene coherencia con el desempeño externo evaluado por la prueba Saber.
+
+---
+
+### Distribución del puntaje global Saber
+
+```{r}
+plot_ly(
+
+df_cam,
+
+x=
+~Cambridge_txt,
+
+y=
+~Global_PS,
+
+type=
+"box",
+
+color=
+~Cambridge_txt
+
+)%>%
+
+layout(
+
+title=
+"Distribución interactiva del puntaje global Saber"
+
+)
+```
+
+**Interpretación**
+
+El grupo con mayor desempeño típico (mediana) fue **`r names(sort(tapply(df_cam$Global_PS,df_cam$Cambridge_txt,median,na.rm=TRUE),decreasing=TRUE))[1]`**.
+
+Por otra parte, el grupo con mayor dispersión en resultados fue **`r names(sort(tapply(df_cam$Global_PS,df_cam$Cambridge_txt,IQR,na.rm=TRUE),decreasing=TRUE))[1]`**, mostrando una mayor variabilidad entre estudiantes.
+
+Los valores atípicos permiten identificar estudiantes con desempeños significativamente distintos al comportamiento central del grupo.
+
+---
+
+**Conclusión**
+
+Los resultados sugieren que la participación en los distintos niveles del programa Cambridge presenta diferencias observables tanto en desempeño académico institucional como en resultados Saber. El análisis permite identificar qué grupos muestran mayor consistencia entre ambas medidas y aporta evidencia para orientar estrategias institucionales de fortalecimiento académico.
+
+
+
+
+---
+---
+---
+
+
+## Programa NOVA
+
+Se examina el comportamiento de los estudiantes pertenecientes al programa NOVA considerando únicamente la población sin diagnóstico, con el propósito de identificar posibles diferencias en el desempeño académico institucional y en los resultados obtenidos en la prueba Saber.
+
+### Comparación descriptiva
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(kableExtra)
+library(plotly)
+
+#=========================================
+# Filtrar estudiantes sin diagnóstico
+#=========================================
+
+df_nova <- df12 %>%
+
+filter(
+Diagnostico=="No"
+)
+
+#=========================================
+# Promedio académico institucional
+#=========================================
+
+df_nova <- df_nova %>%
+
+mutate(
+
+Prom_CA =
+
+rowMeans(
+
+select(
+
+.,
+
+Esp_CA,
+Mat_CA,
+Soc_CA,
+Bio_CA,
+Fis_CA,
+Quim_CA,
+Ing_CA
+
+),
+
+na.rm=TRUE
+
+)
+
+)
+
+#=========================================
+# Etiquetas NOVA
+#=========================================
+
+df_nova <- df_nova %>%
+
+mutate(
+
+Grupo_NOVA =
+
+ifelse(
+
+Nova=="Si",
+
+"Programa NOVA",
+
+"No NOVA"
+
+)
+
+)
+
+#=========================================
+# Tabla resumen
+#=========================================
+
+tabla_nova <-
+
+df_nova %>%
+
+group_by(
+Grupo_NOVA
+)%>%
+
+summarise(
+
+Estudiantes=n(),
+
+Promedio_CA=
+
+round(
+
+mean(
+
+Prom_CA,
+
+na.rm=TRUE
+
+)
+
+),
+
+Global_PS=
+
+round(
+
+mean(
+
+Global_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Lectura=
+
+round(
+
+mean(
+
+Lect_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Matematicas=
+
+round(
+
+mean(
+
+Mat_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Sociales=
+
+round(
+
+mean(
+
+Soc_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Naturales=
+
+round(
+
+mean(
+
+Nat_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Ingles=
+
+round(
+
+mean(
+
+Ing_PS,
+
+na.rm=TRUE
+
+)
+
+)
+
+)
+
+tabla_nova %>%
+
+kbl(
+
+caption=
+"Promedios académicos y resultados Saber — Estudiantes sin diagnóstico",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)
+```
+
+**Interpretación**
+
+Entre los estudiantes sin diagnóstico, el grupo con mayor promedio académico fue **`r tabla_nova$Grupo_NOVA[which.max(tabla_nova$Promedio_CA)]`** con **`r max(tabla_nova$Promedio_CA)`** puntos.
+
+En la prueba Saber, el mayor resultado global fue obtenido por **`r tabla_nova$Grupo_NOVA[which.max(tabla_nova$Global_PS)]`** con **`r max(tabla_nova$Global_PS)`** puntos.
+
+La diferencia entre grupos fue de **`r abs(diff(tabla_nova$Global_PS))`** puntos, permitiendo identificar el nivel de diferencia observado entre estudiantes pertenecientes y no pertenecientes al programa.
+
+---
+
+### Distribución del puntaje global Saber
+
+```{r}
+plot_ly(
+
+df_nova,
+
+x=
+~Grupo_NOVA,
+
+y=
+~Global_PS,
+
+type=
+"box",
+
+color=
+~Grupo_NOVA
+
+)%>%
+
+layout(
+
+title=
+"Distribución interactiva del puntaje global — Estudiantes sin diagnóstico"
+
+)
+```
+
+**Interpretación**
+
+El grupo con mayor desempeño típico (mediana) fue **`r names(sort(tapply(df_nova$Global_PS,df_nova$Grupo_NOVA,median,na.rm=TRUE),decreasing=TRUE))[1]`**.
+
+La mayor variabilidad en resultados se presentó en **`r names(sort(tapply(df_nova$Global_PS,df_nova$Grupo_NOVA,IQR,na.rm=TRUE),decreasing=TRUE))[1]`**, indicando una distribución más amplia de puntajes dentro del grupo.
+
+La comparación entre ambas cajas permite observar si la diferencia entre grupos se mantiene de forma consistente o si está influenciada por algunos estudiantes con resultados extremos.
+
+---
+
+**Conclusión**
+
+Para la población sin diagnóstico, el análisis muestra que el grupo **`r tabla_nova$Grupo_NOVA[which.max(tabla_nova$Global_PS)]`** presentó el mejor desempeño promedio en la prueba Saber.
+
+Estos resultados permiten evaluar el comportamiento del programa NOVA dentro de una población académicamente comparable y apoyar procesos institucionales de seguimiento y fortalecimiento.
+
+
+---
+---
+---
+
+## Asistencia a Pre-ICFES
+
+Se estudia la relación entre los niveles de asistencia a las actividades de preparación y los resultados obtenidos en la prueba Saber, considerando únicamente estudiantes sin diagnóstico, con el propósito de evaluar el posible aporte de estos espacios de fortalecimiento académico.
+
+### Comparación descriptiva por nivel de asistencia
+
+```{r message=FALSE, warning=FALSE}
+library(dplyr)
+library(kableExtra)
+library(plotly)
+
+#===================================
+# Filtrar estudiantes sin diagnóstico
+#===================================
+
+df_pre <- df12 %>%
+
+filter(
+Diagnostico=="No"
+)
+
+#===================================
+# Promedio académico
+#===================================
+
+df_pre <- df_pre %>%
+
+mutate(
+
+Prom_CA =
+
+rowMeans(
+
+select(
+
+.,
+
+Esp_CA,
+Mat_CA,
+Soc_CA,
+Bio_CA,
+Fis_CA,
+Quim_CA,
+Ing_CA
+
+),
+
+na.rm=TRUE
+
+)
+
+)
+
+#===================================
+# Tabla resumen
+#===================================
+
+tabla_pre <-
+
+df_pre %>%
+
+group_by(
+Asistencia
+)%>%
+
+summarise(
+
+Estudiantes=n(),
+
+Promedio_CA=
+
+round(
+
+mean(
+
+Prom_CA,
+
+na.rm=TRUE
+
+)
+
+),
+
+Global_PS=
+
+round(
+
+mean(
+
+Global_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Lectura=
+
+round(
+
+mean(
+
+Lect_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Matematicas=
+
+round(
+
+mean(
+
+Mat_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Sociales=
+
+round(
+
+mean(
+
+Soc_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Naturales=
+
+round(
+
+mean(
+
+Nat_PS,
+
+na.rm=TRUE
+
+)
+
+),
+
+Ingles=
+
+round(
+
+mean(
+
+Ing_PS,
+
+na.rm=TRUE
+
+)
+
+)
+
+)
+
+tabla_pre %>%
+
+kbl(
+
+caption=
+"Promedios académicos y resultados Saber según asistencia",
+
+align="c"
+
+)%>%
+
+kable_styling(
+
+bootstrap_options=
+
+c(
+
+"striped",
+"hover"
+
+),
+
+full_width=FALSE,
+
+position="center",
+
+font_size=13
+
+)%>%
+
+row_spec(
+
+0,
+
+background=
+"#0B1F3A",
+
+color=
+"white",
+
+bold=TRUE
+
+)
+```
+
+**Interpretación**
+
+El nivel de asistencia que registró el mayor promedio en la prueba Saber fue **`r tabla_pre$Asistencia[which.max(tabla_pre$Global_PS)]`** asistencias, alcanzando **`r max(tabla_pre$Global_PS)`** puntos.
+
+En desempeño académico institucional, el promedio más alto fue de **`r max(tabla_pre$Promedio_CA)`** puntos.
+
+Estos resultados permiten observar si mayores niveles de participación se asocian con mejores resultados académicos.
+
+---
+
+### Relación entre asistencia y puntaje global Saber
+
+```{r}
+plot_ly(
+
+tabla_pre,
+
+x=
+~Asistencia,
+
+y=
+~Global_PS,
+
+type=
+"scatter",
+
+mode=
+"lines+markers",
+
+text=
+~paste(
+
+"Promedio:",
+
+Global_PS
+
+)
+
+)%>%
+
+layout(
+
+title=
+"Relación entre asistencia y puntaje global Saber",
+
+xaxis=
+
+list(
+
+title=
+"Asistencia"
+
+),
+
+yaxis=
+
+list(
+
+title=
+"Puntaje Global Saber"
+
+)
+
+)
+```
+
+**Interpretación**
+
+La asistencia mínima registrada fue de **`r min(tabla_pre$Asistencia)`** y la máxima de **`r max(tabla_pre$Asistencia)`** sesiones.
+
+La diferencia entre el menor y mayor promedio observado fue de **`r max(tabla_pre$Global_PS)-min(tabla_pre$Global_PS)`** puntos.
+
+La tendencia visual permite identificar si el aumento en asistencia se acompaña de una mejora sostenida en los resultados.
+
+---
+
+### Distribución del puntaje global según asistencia
+
+```{r}
+plot_ly(
+
+df_pre,
+
+x=
+~as.factor(Asistencia),
+
+y=
+~Global_PS,
+
+type=
+"box",
+
+color=
+~as.factor(Asistencia)
+
+)%>%
+
+layout(
+
+title=
+"Distribución interactiva del puntaje global según asistencia",
+
+xaxis=
+
+list(
+
+title=
+"Asistencia"
+
+)
+
+)
+```
+
+**Interpretación**
+
+El grupo de asistencia con mayor mediana del puntaje global fue el de **`r names(which.max(tapply(df_pre$Global_PS,df_pre$Asistencia,median,na.rm=TRUE)))`** asistencias.
+
+Por otra parte, el nivel de asistencia con mayor variabilidad fue **`r names(which.max(tapply(df_pre$Global_PS,df_pre$Asistencia,IQR,na.rm=TRUE)))`**.
+
+Esto permite identificar si el mejor desempeño se mantiene de forma consistente entre estudiantes o si está influenciado por algunos casos particulares.
+
+---
+
+**Conclusión**
+
+Dentro de la población sin diagnóstico, los resultados permiten evaluar si existe una relación observable entre la participación en espacios de preparación y el desempeño en la prueba Saber.
+
+La comparación por niveles de asistencia aporta evidencia para valorar el alcance institucional de las actividades Pre-ICFES como estrategia de fortalecimiento académico.
+
+
+
+---
+
+# Resumen ejecutivo
+
+El presente informe tuvo como propósito analizar distintas fuentes de información académica institucional con el fin de comprender cuáles factores presentan mayor relación con el desempeño observado en la prueba Saber y aportar evidencia para la toma de decisiones institucionales.
+
+En primer lugar, el análisis descriptivo permitió caracterizar la población estudiada considerando variables académicas, programas institucionales y condiciones particulares de los estudiantes. Esto permitió construir una visión global del comportamiento del grupo antes de realizar comparaciones específicas.
+
+Respecto a la relación entre fuentes de evaluación, se encontró que los resultados de simulacros constituyen uno de los indicadores más alineados con el desempeño posterior en la prueba Saber, mostrando una relación más consistente que la observada únicamente desde las calificaciones institucionales. La estandarización de escalas permitió realizar comparaciones más justas entre instrumentos de evaluación con rangos distintos.
+
+En el análisis por énfasis académico se identificaron diferencias en el comportamiento entre grupos, evidenciando fortalezas particulares en algunas áreas del conocimiento y oportunidades de fortalecimiento en otras. Este resultado permitió reconocer cuáles énfasis mostraron una mayor coherencia entre desempeño institucional y desempeño externo.
+
+Para la población con diagnóstico, el análisis comparativo permitió observar el comportamiento promedio frente a la población general y estudiantes sin diagnóstico, identificando áreas donde el acompañamiento institucional puede continuar fortaleciendo procesos de aprendizaje y seguimiento académico.
+
+En relación con el programa Cambridge, los resultados permitieron identificar diferencias entre grupos según el nivel de participación en las evaluaciones internacionales, observando el grado de alineación entre desempeño institucional y resultados externos.
+
+De manera similar, el análisis del programa NOVA permitió estudiar el comportamiento académico dentro de una población comparable, identificando diferencias en desempeño institucional y resultados Saber que aportan evidencia para el seguimiento del programa.
+
+Finalmente, el análisis de asistencia a espacios Pre-ICFES permitió evaluar si mayores niveles de participación se acompañan de mejores resultados académicos y de prueba externa, aportando información útil para valorar el impacto potencial de estas estrategias de preparación.
+
+## Conclusiones institucionales
+
+- Los simulacros continúan siendo una herramienta útil para anticipar el comportamiento esperado en la prueba Saber.
+- El seguimiento simultáneo entre desempeño institucional y evaluación externa fortalece la capacidad institucional de toma de decisiones.
+- Existen diferencias observables entre grupos académicos que justifican estrategias de acompañamiento diferenciadas.
+- Los programas institucionales evaluados aportan información relevante para el seguimiento del rendimiento académico.
+- La evidencia obtenida permite orientar acciones pedagógicas desde un enfoque preventivo y basado en datos.
+
+## Recomendaciones
+
+1. Mantener el seguimiento conjunto entre simulacros, desempeño institucional y prueba Saber.
+2. Priorizar intervenciones académicas en grupos que presenten mayores brechas.
+3. Continuar fortaleciendo espacios de preparación y acompañamiento.
+4. Consolidar este tipo de análisis como herramienta periódica de seguimiento institucional.
+5. Incorporar los resultados como insumo para procesos de planeación académica y mejora continua.
+
+---
+---
+---
+
