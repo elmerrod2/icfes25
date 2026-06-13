@@ -21,6 +21,11 @@ renv::init()
 renv::snapshot()
 ```
 
+```{r}
+install.packages("rsconnect")
+rsconnect::writeManifest()
+```
+
 ```{r setup, include=FALSE}
 # Esto ayuda a ocultar completamente el código:
 knitr::opts_chunk$set(
