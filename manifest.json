@@ -7,11 +7,19 @@
   },
   "packages": {
     "R": [
-      {
-        "package": "rmarkdown",
-        "version": "*",
-        "source": "CRAN"
-      }
+      { "package": "rmarkdown", "source": "CRAN" },
+      { "package": "knitr", "source": "CRAN" },
+      { "package": "dplyr", "source": "CRAN" },
+      { "package": "tidyr", "source": "CRAN" },
+      { "package": "ggplot2", "source": "CRAN" },
+      { "package": "plotly", "source": "CRAN" },
+      { "package": "tibble", "source": "CRAN" },
+      { "package": "tidyverse", "source": "CRAN" },
+      { "package": "car", "source": "CRAN" },
+      { "package": "psych", "source": "CRAN" },
+      { "package": "corrplot", "source": "CRAN" },
+      { "package": "kableExtra", "source": "CRAN" },
+      { "package": "scales", "source": "CRAN" }
     ]
   }
 }
