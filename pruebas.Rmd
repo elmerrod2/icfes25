@@ -15,6 +15,12 @@ output:
     css: estilos.css
 ---
 
+```{r}
+install.packages("renv")
+renv::init()
+renv::snapshot()
+```
+
 ```{r setup, include=FALSE}
 # Esto ayuda a ocultar completamente el código:
 knitr::opts_chunk$set(
